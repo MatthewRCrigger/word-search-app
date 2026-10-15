@@ -1,0 +1,88 @@
+@page {
+  size: letter portrait;
+  margin: 0.25in;
+}
+
+body {
+  background: white;
+  margin: 0;
+  color: black;
+}
+
+.no-print,
+.empty-state {
+  display: none !important;
+}
+
+.page {
+  display: block;
+  max-width: none;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.output {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  overflow: visible;
+}
+
+.output.is-empty {
+  display: none;
+}
+
+.print-header h2 {
+  font-size: 22pt;
+}
+
+.print-header p {
+  font-size: 10pt;
+  margin: 0.02in 0 0.08in;
+}
+
+.puzzle-grid {
+  width: var(--print-grid-size, 5.9in);
+  height: var(--print-grid-size, 5.9in);
+  margin: 0 auto 0.16in;
+  border: 2px solid black;
+  page-break-inside: avoid;
+  overflow: hidden;
+}
+
+.cell {
+  border-color: #666;
+  font-size: var(--print-cell-font-size, 11pt);
+}
+
+.word-list-wrap {
+  margin-top: 0.08in;
+}
+
+.word-list-wrap h3 {
+  font-size: 12pt;
+  margin: 0 0 0.02in;
+}
+
+.word-list {
+  columns: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.2in;
+  row-gap: 0.02in;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.word-list li {
+  font-size: 9pt;
+  line-height: 1.12;
+  padding: 0.01in 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

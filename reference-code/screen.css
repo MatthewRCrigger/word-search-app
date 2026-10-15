@@ -1,0 +1,217 @@
+body {
+  background: radial-gradient(circle at top right, #efe6d4, var(--bg));
+}
+
+.hero {
+  background: linear-gradient(135deg, #fff5dc, #f0ede3);
+  border: 1px solid #d8ceb8;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+}
+
+.hero h1 {
+  margin: 0 0 0.3rem;
+}
+
+.hero p {
+  margin: 0;
+}
+
+.controls {
+  background: var(--panel);
+  border: 1px solid #ddd4c2;
+  border-radius: 14px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.word-builder {
+  display: grid;
+  gap: 0.35rem;
+}
+
+#wordEntry {
+  width: 100%;
+}
+
+.word-help {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #675f52;
+}
+
+.word-chips {
+  min-height: 2.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border: 1px solid #ded6c6;
+  border-radius: 12px;
+  padding: 0.65rem;
+  background: #fffef9;
+}
+
+.word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.32rem 0.62rem;
+  background: #ece6d7;
+  color: #322f28;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.chip-remove {
+  border: 0;
+  background: transparent;
+  color: #625a4b;
+  padding: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  line-height: 1;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.chip-remove:hover {
+  background: #d7cfbc;
+}
+
+.word-chips.is-empty::before {
+  content: "No words added yet";
+  color: #8b816e;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.grid-size-row {
+  align-items: flex-start;
+}
+
+.grid-size-label {
+  font-weight: 700;
+  padding-top: 0.45rem;
+}
+
+.grid-size-picker {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.size-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.size-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.size-option span {
+  display: inline-block;
+  border: 1px solid #c7bca5;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  font-weight: 700;
+  color: #4b4336;
+  background: #f7f2e7;
+  min-width: 5.5rem;
+  text-align: center;
+}
+
+.size-option input:checked + span {
+  background: #2f5e8f;
+  border-color: #2f5e8f;
+  color: white;
+}
+
+.hint {
+  color: #4f4a3f;
+  font-size: 0.95rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.validation {
+  min-height: 1.2rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.validation.warn {
+  color: #8b2f00;
+}
+
+.validation.ok {
+  color: #0a5d2a;
+}
+
+.output {
+  min-height: 18rem;
+}
+
+.word-list {
+  columns: 2;
+  column-gap: 2rem;
+}
+
+.empty-state {
+  min-height: 10rem;
+  border: 2px dashed #c7baa0;
+  border-radius: 12px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #665f52;
+  font-weight: 700;
+  padding: 1rem;
+  background: linear-gradient(180deg, #fffef9, #f8f3e7);
+}
+
+.output.is-empty .empty-state {
+  display: flex;
+}
+
+.output.is-empty .puzzle-grid,
+.output.is-empty .word-list-wrap {
+  display: none;
+}
+
+@media (max-width: 740px) {
+  .word-list {
+    columns: 1;
+  }
+}

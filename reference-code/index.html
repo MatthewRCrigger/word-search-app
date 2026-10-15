@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Search Puzzle Generator</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="screen.css" media="screen" />
+    <link rel="stylesheet" href="print.css" media="print" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero no-print">
+        <h1>Word Search Puzzle Generator</h1>
+        <p>Create custom, printable word searches with your own words.</p>
+      </header>
+
+      <section class="controls no-print" aria-label="Puzzle settings">
+        <label for="wordEntry">Words</label>
+        <div class="word-builder">
+          <input
+            id="wordEntry"
+            type="text"
+            placeholder="Type a word and press Enter"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p class="word-help">Press Enter to add each word.</p>
+        </div>
+        <div id="wordChips" class="word-chips" aria-label="Word list"></div>
+
+        <div class="row grid-size-row">
+          <span class="grid-size-label">Grid size</span>
+          <fieldset id="gridSizePicker" class="grid-size-picker" aria-label="Grid size">
+            <label class="size-option">
+              <input type="radio" name="gridSize" value="12" />
+              <span>12 x 12</span>
+            </label>
+            <label class="size-option">
+              <input type="radio" name="gridSize" value="16" checked />
+              <span>16 x 16</span>
+            </label>
+            <label class="size-option">
+              <input type="radio" name="gridSize" value="20" />
+              <span>20 x 20</span>
+            </label>
+            <label class="size-option">
+              <input type="radio" name="gridSize" value="24" />
+              <span>24 x 24</span>
+            </label>
+          </fieldset>
+        </div>
+
+        <div class="actions">
+          <button id="generateBtn" type="button">Generate Puzzle</button>
+          <button id="printBtn" type="button" disabled>Print</button>
+        </div>
+
+        <p id="validationMessage" class="validation" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="output" class="output is-empty" aria-live="polite">
+        <div class="print-header">
+          <h2 id="puzzleTitle">Word Search</h2>
+          <p>Find all words in the puzzle.</p>
+        </div>
+
+        <div id="emptyState" class="empty-state">Add words and click Generate Puzzle to preview.</div>
+        <div id="puzzleGrid" class="puzzle-grid" aria-label="Word search puzzle"></div>
+
+        <div class="word-list-wrap">
+          <h3>Words to Find</h3>
+          <ul id="wordList" class="word-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
