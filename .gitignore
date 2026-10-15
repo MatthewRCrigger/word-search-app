@@ -1,5 +1,22 @@
+# macOS
 .DS_Store
+**/.DS_Store
+
+# Xcode
 xcuserdata/
 *.xcuserstate
+*.xcscmblueprint
 DerivedData/
 build/
+.build/
+.swiftpm/
+*.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+
+# Build products
+*.ipa
+*.dSYM/
+*.dSYM.zip
+*.app
+
+# Claude Code local settings
+.claude/settings.local.json
