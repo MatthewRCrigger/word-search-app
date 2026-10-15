@@ -382,7 +382,7 @@ struct SubjectNameEditorSection: View {
                 .font(.headline)
 
             TextField(placeholder, text: $draftName)
-                .textInputAutocapitalization(.words)
+                .capitalizesWords()
                 .autocorrectionDisabled(true)
 
             HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -573,7 +573,7 @@ struct WordBankBulkImportComposer: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(.quaternary, lineWidth: 1)
                 )
-                .textInputAutocapitalization(.never)
+                .capitalizesWords(false)
                 .autocorrectionDisabled(true)
 
             if draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

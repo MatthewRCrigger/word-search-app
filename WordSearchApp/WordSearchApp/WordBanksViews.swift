@@ -444,7 +444,7 @@ private struct RenameWordBankView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel("Name")
                 TextField("Word bank name", text: $draftName)
-                    .textInputAutocapitalization(.words)
+                    .capitalizesWords()
                     .autocorrectionDisabled(true)
                     .font(.system(size: 18, weight: .semibold))
                     .padding(.horizontal, 18)
@@ -509,7 +509,7 @@ struct CreateWordBankView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel("Name")
                 TextField("Example: Animals", text: $nameDraft)
-                    .textInputAutocapitalization(.words)
+                    .capitalizesWords()
                     .autocorrectionDisabled(true)
                     .font(.system(size: 18, weight: .semibold))
                     .padding(.horizontal, 18)

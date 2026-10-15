@@ -1,5 +1,14 @@
 import Foundation
+
+#if canImport(UIKit)
 import UIKit
+private typealias PlatformFont = UIFont
+private typealias PlatformColor = UIColor
+#elseif canImport(AppKit)
+import AppKit
+private typealias PlatformFont = NSFont
+private typealias PlatformColor = NSColor
+#endif
 
 enum PuzzlePDFExporter {
     struct Layout: Equatable {
@@ -13,12 +22,12 @@ enum PuzzlePDFExporter {
     }
 
     private static let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
-    private static let contentInsets = UIEdgeInsets(top: 36, left: 36, bottom: 36, right: 36)
-    private static let titleFont = UIFont.systemFont(ofSize: 28, weight: .bold)
-    private static let titleColor = UIColor.black
-    private static let gridLineColor = UIColor.black
+    private static let contentInset: CGFloat = 36
+    private static let titleFont = PlatformFont.systemFont(ofSize: 28, weight: .bold)
+    private static let titleColor = PlatformColor.black
+    private static let gridLineColor = PlatformColor.black
     private static let gridLineWidth: CGFloat = 1
-    private static let wordFont = UIFont.systemFont(ofSize: 11, weight: .semibold)
+    private static let wordFont = PlatformFont.systemFont(ofSize: 11, weight: .semibold)
     private static let wordLineHeight: CGFloat = 16
     private static let wordColumnSpacing: CGFloat = 10
     private static let sectionSpacing: CGFloat = 18
@@ -27,20 +36,45 @@ enum PuzzlePDFExporter {
     private static let defaultPDFExtension = "pdf"
 
     static func pdfData(for puzzle: WordSearchPuzzle, title: String) -> Data {
-        let rendererFormat = UIGraphicsPDFRendererFormat()
-        rendererFormat.documentInfo = [
+        let documentInfo: [String: Any] = [
             kCGPDFContextTitle as String: normalizedTitle(title),
             kCGPDFContextAuthor as String: documentCreator,
             kCGPDFContextCreator as String: documentCreator,
             kCGPDFContextSubject as String: documentSubject,
         ]
+        let layout = layout(for: puzzle, title: title)
+
+        #if canImport(UIKit)
+        let rendererFormat = UIGraphicsPDFRendererFormat()
+        rendererFormat.documentInfo = documentInfo
 
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: rendererFormat)
         return renderer.pdfData { context in
             context.beginPage()
-            let layout = layout(for: puzzle, title: title)
             drawPage(for: puzzle, title: title, layout: layout)
         }
+        #else
+        let data = NSMutableData()
+        var mediaBox = pageRect
+        guard let consumer = CGDataConsumer(data: data as CFMutableData),
+              let context = CGContext(consumer: consumer, mediaBox: &mediaBox, documentInfo as CFDictionary) else {
+            return Data()
+        }
+
+        context.beginPDFPage(nil)
+        // Flip to a top-left origin so the shared layout math matches UIKit's.
+        context.translateBy(x: 0, y: pageRect.height)
+        context.scaleBy(x: 1, y: -1)
+
+        let previousContext = NSGraphicsContext.current
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
+        drawPage(for: puzzle, title: title, layout: layout)
+        NSGraphicsContext.current = previousContext
+
+        context.endPDFPage()
+        context.closePDF()
+        return data as Data
+        #endif
     }
 
     static func shareableFileURL(
@@ -59,6 +93,7 @@ enum PuzzlePDFExporter {
         return fileURL
     }
 
+    #if canImport(UIKit)
     @MainActor
     @discardableResult
     static func presentPrintInteractionController(
@@ -91,10 +126,11 @@ enum PuzzlePDFExporter {
             return false
         }
     }
+    #endif
 
     static func layout(for puzzle: WordSearchPuzzle, title: String, pageRect: CGRect = pageRect) -> Layout {
-        let contentRect = pageRect.inset(by: contentInsets)
-        let titleHeight = max(titleFont.lineHeight + 8, 34)
+        let contentRect = pageRect.insetBy(dx: contentInset, dy: contentInset)
+        let titleHeight = max(lineHeight(of: titleFont) + 8, 34)
         let titleFrame = CGRect(
             x: contentRect.minX,
             y: contentRect.minY,
@@ -156,7 +192,12 @@ enum PuzzlePDFExporter {
     }
 
     private static func drawPage(for puzzle: WordSearchPuzzle, title: String, layout: Layout) {
-        guard let context = UIGraphicsGetCurrentContext() else { return }
+        #if canImport(UIKit)
+        let currentContext = UIGraphicsGetCurrentContext()
+        #else
+        let currentContext = NSGraphicsContext.current?.cgContext
+        #endif
+        guard let context = currentContext else { return }
 
         drawTitle(title, in: layout.titleFrame)
         drawGrid(puzzle, in: layout.gridFrame, cellSize: layout.gridCellSize, context: context)
@@ -183,7 +224,8 @@ enum PuzzlePDFExporter {
         context.setStrokeColor(gridLineColor.cgColor)
         context.setLineWidth(gridLineWidth)
 
-        let linePath = UIBezierPath(rect: frame)
+        let linePath = CGMutablePath()
+        linePath.addRect(frame)
         for row in 0...puzzle.size {
             let y = frame.minY + CGFloat(row) * cellSize
             linePath.move(to: CGPoint(x: frame.minX, y: y))
@@ -196,17 +238,17 @@ enum PuzzlePDFExporter {
             linePath.addLine(to: CGPoint(x: x, y: frame.maxY))
         }
 
-        context.addPath(linePath.cgPath)
+        context.addPath(linePath)
         context.strokePath()
 
-        let letterFont = UIFont.systemFont(ofSize: max(8, min(18, cellSize * 0.56)), weight: .semibold)
+        let letterFont = PlatformFont.systemFont(ofSize: max(8, min(18, cellSize * 0.56)), weight: .semibold)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
         paragraphStyle.lineBreakMode = .byClipping
 
         let letterAttributes: [NSAttributedString.Key: Any] = [
             .font: letterFont,
-            .foregroundColor: UIColor.black,
+            .foregroundColor: PlatformColor.black,
             .paragraphStyle: paragraphStyle
         ]
 
@@ -232,7 +274,7 @@ enum PuzzlePDFExporter {
 
         let attributes: [NSAttributedString.Key: Any] = [
             .font: wordFont,
-            .foregroundColor: UIColor.black,
+            .foregroundColor: PlatformColor.black,
             .paragraphStyle: paragraphStyle
         ]
 
@@ -251,6 +293,10 @@ enum PuzzlePDFExporter {
             let wordFrame = CGRect(x: x, y: y, width: columnWidth, height: wordLineHeight)
             (word as NSString).draw(in: wordFrame, withAttributes: attributes)
         }
+    }
+
+    private static func lineHeight(of font: PlatformFont) -> CGFloat {
+        ceil(font.ascender - font.descender + font.leading)
     }
 
     private static func normalizedTitle(_ title: String) -> String {

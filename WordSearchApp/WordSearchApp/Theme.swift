@@ -98,6 +98,16 @@ struct SectionLabel: View {
 }
 
 extension View {
+    /// Capitalizes each word as the user types on iOS; a no-op on macOS, which has no such API.
+    @ViewBuilder
+    func capitalizesWords(_ enabled: Bool = true) -> some View {
+        #if os(iOS)
+        self.textInputAutocapitalization(enabled ? .words : .never)
+        #else
+        self
+        #endif
+    }
+
     func card(cornerRadius: CGFloat = 24, padding: CGFloat = 0) -> some View {
         self
             .padding(padding)
@@ -137,7 +147,6 @@ struct IconTextField: View {
     @Binding var text: String
     var systemImage: String?
     var fill: Color = Theme.ground
-    var capitalization: TextInputAutocapitalization = .never
     var onSubmit: () -> Void = {}
 
     var body: some View {
@@ -147,8 +156,7 @@ struct IconTextField: View {
                     .foregroundStyle(Theme.inkTertiary)
             }
             TextField(placeholder, text: $text)
-                .textInputAutocapitalization(capitalization)
-                .autocorrectionDisabled(true)
+                                .autocorrectionDisabled(true)
                 .submitLabel(.done)
                 .onSubmit(onSubmit)
                 .font(.system(size: 17, weight: .medium))

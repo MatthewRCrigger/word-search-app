@@ -1,5 +1,9 @@
 import SwiftData
 import SwiftUI
+#if os(macOS)
+import AppKit
+import UniformTypeIdentifiers
+#endif
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -23,9 +27,17 @@ struct ContentView: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    private var usesSidebarLayout: Bool {
+        #if os(macOS)
+        true
+        #else
+        horizontalSizeClass == .regular
+        #endif
+    }
+
     var body: some View {
         Group {
-            if horizontalSizeClass == .regular {
+            if usesSidebarLayout {
                 HStack(spacing: 0) {
                     AppSidebar(selectedTab: $selectedTab)
                     Group {
@@ -47,7 +59,7 @@ struct ContentView: View {
             }
         }
         .tint(Theme.accent)
-        .fullScreenCover(item: $activePuzzleSession) { session in
+        .puzzleCover(item: $activePuzzleSession) { session in
             PuzzlePlayView(
                 puzzle: session.puzzle,
                 title: session.title,
@@ -82,9 +94,11 @@ struct ContentView: View {
                 selectedSubjectID = subject.persistentModelID
             }
         }
+        #if os(iOS)
         .sheet(item: $exportedDocument, onDismiss: cleanupExportedDocument) { document in
             ShareSheet(items: [document.url])
         }
+        #endif
     }
 
     private var playScreen: some View {
@@ -218,12 +232,39 @@ struct ContentView: View {
     private func exportPuzzleToPDF(puzzle: WordSearchPuzzle, title: String) {
         do {
             let fileURL = try PuzzlePDFExporter.shareableFileURL(for: puzzle, title: title)
+            #if os(macOS)
+            savePDFWithPanel(from: fileURL, suggestedName: fileURL.lastPathComponent)
+            #else
             exportedDocumentCleanupURL = fileURL
             exportedDocument = ExportedDocument(url: fileURL)
+            #endif
         } catch {
             setupErrorMessage = "Couldn't generate PDF right now. Please try again."
         }
     }
+
+    #if os(macOS)
+    /// Mac has no share sheet for files, so ask where to save the PDF instead.
+    private func savePDFWithPanel(from temporaryURL: URL, suggestedName: String) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.pdf]
+        panel.nameFieldStringValue = suggestedName
+        panel.canCreateDirectories = true
+
+        let response = panel.runModal()
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
+        guard response == .OK, let destination = panel.url else { return }
+
+        do {
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: temporaryURL, to: destination)
+        } catch {
+            setupErrorMessage = "Couldn't save the PDF. Please try again."
+        }
+    }
+    #endif
 
     private func cleanupExportedDocument() {
         if let url = exportedDocumentCleanupURL {
@@ -300,6 +341,23 @@ struct ContentView: View {
     }
 }
 
+private extension View {
+    /// Full-screen on iOS; a sheet sized for the board on macOS, which has no full-screen cover.
+    @ViewBuilder
+    func puzzleCover<Item: Identifiable, Content: View>(
+        item: Binding<Item?>,
+        @ViewBuilder content: @escaping (Item) -> Content
+    ) -> some View {
+        #if os(macOS)
+        self.sheet(item: item) { value in
+            content(value).frame(minWidth: 960, minHeight: 720)
+        }
+        #else
+        self.fullScreenCover(item: item, content: content)
+        #endif
+    }
+}
+
 private struct AppSidebar: View {
     @Binding var selectedTab: Int
 
@@ -354,6 +412,7 @@ private struct AppSidebar: View {
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(isSelected ? Theme.accentTint : .clear))
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled()
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
