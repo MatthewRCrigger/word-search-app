@@ -81,7 +81,7 @@ struct InteractivePuzzleView: View {
             ForEach(Array(revealedPaths.enumerated()), id: \.offset) { _, path in
                 highlightPath(
                     path,
-                    color: Color(hex: 0xFFC9D6),
+                    color: Theme.missedFill,
                     lineWidth: foundHighlightWidth,
                     spacing: spacing,
                     cellSize: cellSize
@@ -217,7 +217,7 @@ struct InteractivePuzzleView: View {
             return Theme.accentText
         }
 
-        return Color(hex: 0x33425B)
+        return Theme.boardLetter
     }
 
     private func handleDragChanged(_ location: CGPoint, side: CGFloat, spacing: CGFloat, cellSize: CGFloat) {

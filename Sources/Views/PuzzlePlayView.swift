@@ -47,7 +47,9 @@ struct PuzzlePlayView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            #if os(iOS)
             topBar
+            #endif
 
             GeometryReader { proxy in
                 let useSideBySide = proxy.size.width > 760 && proxy.size.width > proxy.size.height * 1.05
@@ -68,6 +70,9 @@ struct PuzzlePlayView: View {
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 32)
+                #if os(macOS)
+                .padding(.top, 20)
+                #endif
             }
         }
         .background(Theme.ground.ignoresSafeArea())
@@ -87,7 +92,47 @@ struct PuzzlePlayView: View {
         .onDisappear {
             hintClearTask?.cancel()
         }
+        #if os(macOS)
+        .navigationTitle(title)
+        .navigationSubtitle("\(foundWords.count) of \(displayWords.count) found · \(displayedPuzzle.size) × \(displayedPuzzle.size)")
+        .toolbar { macToolbar }
+        .focusedSceneValue(\.puzzleActions, PuzzleActions(
+            canHint: canHint,
+            canGiveUp: canGiveUp,
+            hint: showHint,
+            giveUp: giveUp,
+            playAgain: startNextPuzzle,
+            exportPDF: { _ = MacPDF.save(puzzle: displayedPuzzle, title: title) },
+            printPuzzle: { onPrintPuzzle(displayedPuzzle) }
+        ))
+        #endif
     }
+
+    private var canGiveUp: Bool {
+        revealedMissedWords.isEmpty && foundWords.count < displayWords.count
+    }
+
+    #if os(macOS)
+    @ToolbarContentBuilder
+    private var macToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            if revealedMissedWords.isEmpty {
+                Button("Hint", systemImage: "lightbulb", action: showHint)
+                    .help("Highlight a cell next to an unfound word")
+                    .disabled(!canHint)
+                Button("Give Up", systemImage: "flag", action: giveUp)
+                    .help("Reveal the remaining words")
+                    .disabled(!canGiveUp)
+            } else {
+                Button("Play Again", systemImage: "arrow.clockwise", action: startNextPuzzle)
+                    .buttonStyle(.borderedProminent)
+            }
+
+            Button("Print", systemImage: "printer") { onPrintPuzzle(displayedPuzzle) }
+                .help("Print this puzzle")
+        }
+    }
+    #endif
 
     // MARK: Layout pieces
 
@@ -145,7 +190,9 @@ struct PuzzlePlayView: View {
                 wordsCard
             }
 
+            #if os(iOS)
             actionRow
+            #endif
         }
     }
 
@@ -168,7 +215,7 @@ struct PuzzlePlayView: View {
 
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(hex: 0xE4EAF3))
+                    Capsule().fill(Theme.track)
                     Capsule()
                         .fill(Theme.accent)
                         .frame(width: proxy.size.width * CGFloat(found) / CGFloat(total))
@@ -204,10 +251,10 @@ struct PuzzlePlayView: View {
 
         return HStack(spacing: 12) {
             Circle()
-                .fill(isFound ? Theme.wordColor(at: index) : (isMissed ? Color(hex: 0xFFC9D6) : .clear))
+                .fill(isFound ? Theme.wordColor(at: index) : (isMissed ? Theme.missedFill : .clear))
                 .overlay(
                     Circle().strokeBorder(
-                        isFound ? Theme.ink.opacity(0.18) : (isMissed ? Theme.danger.opacity(0.4) : Color(hex: 0xCBD5E4)),
+                        isFound ? Theme.ink.opacity(0.18) : (isMissed ? Theme.danger.opacity(0.4) : Theme.border),
                         lineWidth: 2
                     )
                 )
@@ -256,7 +303,7 @@ struct PuzzlePlayView: View {
 
     private var completionOverlay: some View {
         ZStack {
-            Color(hex: 0x0F1B2D).opacity(0.45)
+            Theme.scrim
                 .ignoresSafeArea()
 
             VStack(spacing: 8) {
@@ -264,7 +311,7 @@ struct PuzzlePlayView: View {
                     .font(.system(size: 40))
                     .foregroundStyle(Color(hex: 0xF2B705))
                     .frame(width: 80, height: 80)
-                    .background(Circle().fill(Color(hex: 0xFFF0A8)))
+                    .background(Circle().fill(Theme.starFill))
                     .padding(.bottom, 8)
 
                 Text("You did it!")

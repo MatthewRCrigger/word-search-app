@@ -1,6 +1,6 @@
 import Foundation
 
-struct WordSearchPuzzle {
+struct WordSearchPuzzle: Codable, Hashable {
     let size: Int
     let grid: [[String]]
     let words: [String]
@@ -11,7 +11,7 @@ struct WordSearchGenerationResult {
     let unplacedWords: [String]
 }
 
-struct WordSearchGenerationOptions {
+struct WordSearchGenerationOptions: Codable, Hashable {
     let allowBackwards: Bool
     let allowOverlap: Bool
 

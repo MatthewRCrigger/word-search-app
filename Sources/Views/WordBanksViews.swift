@@ -162,6 +162,7 @@ struct WordBanksView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
+            #if os(iOS)
             HStack(alignment: .bottom) {
                 Text("Word banks")
                     .font(Theme.display(40, weight: .heavy))
@@ -178,6 +179,7 @@ struct WordBanksView: View {
                 }
                 .buttonStyle(.plain)
             }
+            #endif
 
             if subjects.isEmpty {
                 VStack(spacing: 12) {

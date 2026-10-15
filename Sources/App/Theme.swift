@@ -1,23 +1,44 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 enum Theme {
-    static let ground = Color(hex: 0xEEF2F7)
-    static let surface = Color.white
-    static let ink = Color(hex: 0x0F1B2D)
-    static let inkSecondary = Color(hex: 0x53627A)
-    static let inkTertiary = Color(hex: 0x7B8AA3)
-    static let line = Color(hex: 0xDCE3EE)
-    static let fillQuiet = Color(hex: 0xF2F5FA)
-    static let accent = Color(hex: 0x2F5BEA)
-    static let accentText = Color(hex: 0x1F46C9)
-    static let accentTint = Color(hex: 0xE4ECFF)
-    static let danger = Color(hex: 0xB3261E)
-    static let warning = Color(hex: 0x8A3E08)
+    // Surfaces
+    static let ground = Color(light: 0xEEF2F7, dark: 0x14181F)
+    static let surface = Color(light: 0xFFFFFF, dark: 0x1E242E)
+    static let fillQuiet = Color(light: 0xF2F5FA, dark: 0x252C38)
+    static let boardWell = Color(light: 0xF6F8FC, dark: 0x1A1F28)
+    static let track = Color(light: 0xE4EAF3, dark: 0x0F131A)
+    static let line = Color(light: 0xDCE3EE, dark: 0x2E3644)
+    static let border = Color(light: 0xCBD5E4, dark: 0x3A4456)
+
+    // Text
+    static let ink = Color(light: 0x0F1B2D, dark: 0xEEF2F8)
+    static let inkSecondary = Color(light: 0x53627A, dark: 0xA3B1C8)
+    static let inkTertiary = Color(light: 0x7B8AA3, dark: 0x7F8DA6)
+    static let boardLetter = Color(light: 0x33425B, dark: 0xC4CFE0)
+    static let foundInk = Color(light: 0x0F1B2D, dark: 0xFFFFFF)
+
+    // Accent and status
+    static let accent = Color(light: 0x2F5BEA, dark: 0x3E6BF0)
+    static let accentText = Color(light: 0x1F46C9, dark: 0x8FB0FF)
+    static let accentTint = Color(light: 0xE4ECFF, dark: 0x22305A)
+    static let danger = Color(light: 0xB3261E, dark: 0xFF8A80)
+    static let warning = Color(light: 0x8A3E08, dark: 0xF2A66B)
+    static let warnFill = Color(light: 0xFFE9D6, dark: 0x3A2A1C)
+    static let missedFill = Color(light: 0xFFC9D6, dark: 0x7C3347)
+    static let starFill = Color(light: 0xFFF0A8, dark: 0x4A3F12)
+    static let scrim = Color.black.opacity(0.45)
 
     /// Soft fills used to tell found words apart on the board and in the word list.
     static let wordColors: [Color] = [
-        Color(hex: 0xBFD7FF), Color(hex: 0xFFD9B8), Color(hex: 0xC9F0D8), Color(hex: 0xFFC9D6),
-        Color(hex: 0xE2D1FF), Color(hex: 0xFFF0A8), Color(hex: 0xBDEBEF), Color(hex: 0xD9E4A8)
+        Color(light: 0xBFD7FF, dark: 0x2E4A86), Color(light: 0xFFD9B8, dark: 0x7A4B22),
+        Color(light: 0xC9F0D8, dark: 0x24604A), Color(light: 0xFFC9D6, dark: 0x7C3347),
+        Color(light: 0xE2D1FF, dark: 0x4F3C86), Color(light: 0xFFF0A8, dark: 0x7A6A1E),
+        Color(light: 0xBDEBEF, dark: 0x1F6068), Color(light: 0xD9E4A8, dark: 0x5E6B26)
     ]
 
     static func wordColor(at index: Int) -> Color {
@@ -36,6 +57,20 @@ extension Color {
             green: Double((hex >> 8) & 0xFF) / 255,
             blue: Double(hex & 0xFF) / 255
         )
+    }
+
+    /// A color that resolves to a different value in light and dark appearance.
+    init(light: UInt32, dark: UInt32) {
+        #if canImport(UIKit)
+        self.init(uiColor: UIColor { traits in
+            UIColor(Color(hex: traits.userInterfaceStyle == .dark ? dark : light))
+        })
+        #else
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            return NSColor(Color(hex: isDark ? dark : light))
+        })
+        #endif
     }
 }
 
@@ -76,7 +111,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(filled ? Color.clear : Color(hex: 0xCBD5E4), lineWidth: 2)
+                    .strokeBorder(filled ? Color.clear : Theme.border, lineWidth: 2)
             )
             .opacity(configuration.isPressed ? 0.7 : 1)
     }

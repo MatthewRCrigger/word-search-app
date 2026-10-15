@@ -183,7 +183,7 @@ struct PlaySetupView: View {
                     .foregroundStyle(Theme.warning)
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(hex: 0xFFE9D6)))
+                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.warnFill))
             } else {
                 HStack(spacing: 12) {
                     Text("\(selectedWordCount)")
@@ -293,7 +293,7 @@ struct PlaySetupView: View {
 }
 
 /// A quiet, deterministic letter field that shows how big the chosen grid will be.
-private struct BoardPreview: View {
+struct BoardPreview: View {
     let size: Int
 
     var body: some View {
@@ -316,7 +316,7 @@ private struct BoardPreview: View {
             }
             .padding(padding)
             .frame(width: side, height: side)
-            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: 0xF6F8FC)))
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.boardWell))
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityHidden(true)
@@ -324,7 +324,10 @@ private struct BoardPreview: View {
 
     private func letter(row: Int, column: Int) -> String {
         let letters = Array("ABCDEFGHILMNOPRSTUW")
-        let value = (row &* 73 &+ column &* 151 &+ row &* column &* 31 &+ 7) % letters.count
-        return String(letters[value])
+        // Hash the cell position so no row or column ends up with a repeating pattern.
+        var hash = UInt32(truncatingIfNeeded: row &* 73_856_093) ^ UInt32(truncatingIfNeeded: column &* 19_349_663)
+        hash = (hash ^ (hash >> 13)) &* 1_274_126_177
+        hash ^= hash >> 16
+        return String(letters[Int(hash % UInt32(letters.count))])
     }
 }

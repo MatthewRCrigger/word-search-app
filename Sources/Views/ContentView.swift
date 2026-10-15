@@ -1,9 +1,5 @@
 import SwiftData
 import SwiftUI
-#if os(macOS)
-import AppKit
-import UniformTypeIdentifiers
-#endif
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -17,91 +13,155 @@ struct ContentView: View {
     @State private var allowBackwards = true
     @State private var allowOverlap = true
 
-    @State private var activePuzzleSession: ActivePuzzleSession?
+    @State private var activePuzzleSession: PuzzleSession?
     @State private var foundWords: Set<String> = []
     @State private var setupErrorMessage = ""
     @State private var isShowingCreateWordBank = false
     @State private var exportedDocument: ExportedDocument?
     @State private var exportedDocumentCleanupURL: URL?
-    private let minimumWordsPerPuzzle = 5
+    private let minimumWordsPerPuzzle = PuzzleFactory.minimumWordsPerPuzzle
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
-    private var usesSidebarLayout: Bool {
-        #if os(macOS)
-        true
-        #else
-        horizontalSizeClass == .regular
-        #endif
+    private var canPlay: Bool {
+        selectedSubject != nil && eligibleWordsForSelectedSubject.count >= minimumWordsPerPuzzle
     }
 
     var body: some View {
-        Group {
-            if usesSidebarLayout {
-                HStack(spacing: 0) {
-                    AppSidebar(selectedTab: $selectedTab)
-                    Group {
-                        if selectedTab == 0 { playScreen } else { wordBanksScreen }
+        shell
+            .tint(Theme.accent)
+            .puzzleCover(item: $activePuzzleSession) { session in
+                PuzzlePlayView(
+                    puzzle: session.puzzle,
+                    title: session.title,
+                    foundWords: $foundWords,
+                    onPlayAgain: { session.nextPuzzle() },
+                    onPrintPuzzle: { exportPuzzleToPDF(puzzle: $0, title: session.title) },
+                    onClose: { activePuzzleSession = nil }
+                )
+            }
+            .onAppear(perform: ensureSelectedSubject)
+            .onChange(of: subjects) { _, _ in
+                ensureSelectedSubject()
+            }
+            .onChange(of: selectedGridSize) { _, _ in
+                syncWordCountWithEligibility()
+            }
+            .onChange(of: selectedSubjectID) { _, _ in
+                syncWordCountWithEligibility()
+            }
+            .sheet(isPresented: $isShowingCreateWordBank) {
+                CreateWordBankView(existingNames: Set(subjects.map(\.name))) { name, words in
+                    let subject = WordSubject(name: name)
+                    modelContext.insert(subject)
+
+                    for text in words {
+                        let word = SubjectWord(text: text)
+                        word.subject = subject
+                        modelContext.insert(word)
+                        subject.words.append(word)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                .background(Theme.ground.ignoresSafeArea())
-            } else {
-                TabView(selection: $selectedTab) {
-                    playScreen
-                        .tabItem { Label("Play", systemImage: "play.fill") }
-                        .tag(0)
 
-                    wordBanksScreen
-                        .tabItem { Label("Word Banks", systemImage: "book.closed.fill") }
-                        .tag(1)
+                    selectedSubjectID = subject.persistentModelID
+                }
+            }
+            #if os(iOS)
+            .sheet(item: $exportedDocument, onDismiss: cleanupExportedDocument) { document in
+                ShareSheet(items: [document.url])
+            }
+            #endif
+            #if os(macOS)
+            .focusedSceneValue(\.libraryActions, LibraryActions(
+                canPlay: canPlay,
+                newPuzzle: generatePuzzle,
+                exportPDF: exportCurrentPuzzleToPDF,
+                newWordBank: { isShowingCreateWordBank = true },
+                showPlay: { selectedTab = 0 },
+                showWordBanks: { selectedTab = 1 }
+            ))
+            #endif
+    }
+
+    @ViewBuilder
+    private var shell: some View {
+        #if os(macOS)
+        NavigationSplitView {
+            List(selection: Binding<Int?>(get: { selectedTab }, set: { selectedTab = $0 ?? selectedTab })) {
+                Section("Library") {
+                    Label("Play", systemImage: "play.fill").tag(0)
+                    Label("Word Banks", systemImage: "book.closed.fill").tag(1)
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
+        } detail: {
+            Group {
+                if selectedTab == 0 { playScreen } else { wordBanksScreen }
+            }
+            .navigationTitle(selectedTab == 0 ? "New Puzzle" : "Word Banks")
+            .toolbar {
+                if selectedTab == 0 {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Button("Export PDF", systemImage: "square.and.arrow.up", action: exportCurrentPuzzleToPDF)
+                            .help("Export this puzzle as a PDF")
+                            .disabled(!canPlay)
+                        Button("Play", systemImage: "play.fill", action: generatePuzzle)
+                            .help("Start a new puzzle")
+                            .buttonStyle(.borderedProminent)
+                            .disabled(!canPlay)
+                    }
+                } else {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("New Word Bank", systemImage: "plus") { isShowingCreateWordBank = true }
+                    }
                 }
             }
         }
-        .tint(Theme.accent)
-        .puzzleCover(item: $activePuzzleSession) { session in
-            PuzzlePlayView(
-                puzzle: session.puzzle,
-                title: session.title,
-                foundWords: $foundWords,
-                onPlayAgain: { generatePuzzleForSession(session) },
-                onPrintPuzzle: { exportPuzzleToPDF(puzzle: $0, title: session.title) },
-                onClose: { activePuzzleSession = nil }
-            )
-        }
-        .onAppear(perform: ensureSelectedSubject)
-        .onChange(of: subjects) { _, _ in
-            ensureSelectedSubject()
-        }
-        .onChange(of: selectedGridSize) { _, _ in
-            syncWordCountWithEligibility()
-        }
-        .onChange(of: selectedSubjectID) { _, _ in
-            syncWordCountWithEligibility()
-        }
-        .sheet(isPresented: $isShowingCreateWordBank) {
-            CreateWordBankView(existingNames: Set(subjects.map(\.name))) { name, words in
-                let subject = WordSubject(name: name)
-                modelContext.insert(subject)
-
-                for text in words {
-                    let word = SubjectWord(text: text)
-                    word.subject = subject
-                    modelContext.insert(word)
-                    subject.words.append(word)
+        .frame(minWidth: 900, minHeight: 600)
+        #else
+        if horizontalSizeClass == .regular {
+            HStack(spacing: 0) {
+                AppSidebar(selectedTab: $selectedTab)
+                Group {
+                    if selectedTab == 0 { playScreen } else { wordBanksScreen }
                 }
-
-                selectedSubjectID = subject.persistentModelID
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }
-        #if os(iOS)
-        .sheet(item: $exportedDocument, onDismiss: cleanupExportedDocument) { document in
-            ShareSheet(items: [document.url])
+            .background(Theme.ground.ignoresSafeArea())
+        } else {
+            TabView(selection: $selectedTab) {
+                playScreen
+                    .tabItem { Label("Play", systemImage: "play.fill") }
+                    .tag(0)
+
+                wordBanksScreen
+                    .tabItem { Label("Word Banks", systemImage: "book.closed.fill") }
+                    .tag(1)
+            }
         }
         #endif
     }
 
+    @ViewBuilder
     private var playScreen: some View {
+        #if os(macOS)
+        MacPlaySetupView(
+            subjects: subjects,
+            selectedSubjectID: $selectedSubjectID,
+            selectedGridSize: $selectedGridSize,
+            selectedWordCount: $selectedWordCount,
+            allowBackwards: $allowBackwards,
+            allowOverlap: $allowOverlap,
+            selectedSubjectName: selectedSubject?.name,
+            minimumWordCount: minimumWordsPerPuzzle,
+            maximumWordCount: eligibleWordsForSelectedSubject.count,
+            statusMessage: setupErrorMessage,
+            onCreateWordBank: { isShowingCreateWordBank = true },
+            onManageWordBanks: { selectedTab = 1 }
+        )
+        #else
         PlaySetupView(
             subjects: subjects,
             selectedSubjectID: $selectedSubjectID,
@@ -118,6 +178,7 @@ struct ContentView: View {
             onGeneratePDF: exportCurrentPuzzleToPDF,
             onPlay: generatePuzzle
         )
+        #endif
     }
 
     private var wordBanksScreen: some View {
@@ -175,8 +236,12 @@ struct ContentView: View {
 
     private func generatePuzzle() {
         guard let session = buildSessionFromCurrentSettings() else { return }
+        #if os(macOS)
+        openWindow(id: PuzzleWindow.id, value: session)
+        #else
         foundWords = []
         activePuzzleSession = session
+        #endif
     }
 
     private func exportCurrentPuzzleToPDF() {
@@ -184,7 +249,7 @@ struct ContentView: View {
         exportPuzzleToPDF(puzzle: session.puzzle, title: session.title)
     }
 
-    private func buildSessionFromCurrentSettings() -> ActivePuzzleSession? {
+    private func buildSessionFromCurrentSettings() -> PuzzleSession? {
         guard let selectedSubject else {
             setupErrorMessage = "Create a word bank first."
             return nil
@@ -208,7 +273,7 @@ struct ContentView: View {
             allowOverlap: allowOverlap
         )
 
-        guard let puzzle = generateRandomPuzzle(
+        guard let puzzle = PuzzleFactory.generate(
             from: eligibleWords,
             wordCount: requestedWordCount,
             size: selectedGridSize,
@@ -219,7 +284,7 @@ struct ContentView: View {
         }
 
         setupErrorMessage = ""
-        return ActivePuzzleSession(
+        return PuzzleSession(
             puzzle: puzzle,
             wordPool: eligibleWords,
             wordCount: requestedWordCount,
@@ -230,83 +295,26 @@ struct ContentView: View {
     }
 
     private func exportPuzzleToPDF(puzzle: WordSearchPuzzle, title: String) {
+        #if os(macOS)
+        if !MacPDF.save(puzzle: puzzle, title: title) {
+            setupErrorMessage = "Couldn't save the PDF. Please try again."
+        }
+        #else
         do {
             let fileURL = try PuzzlePDFExporter.shareableFileURL(for: puzzle, title: title)
-            #if os(macOS)
-            savePDFWithPanel(from: fileURL, suggestedName: fileURL.lastPathComponent)
-            #else
             exportedDocumentCleanupURL = fileURL
             exportedDocument = ExportedDocument(url: fileURL)
-            #endif
         } catch {
             setupErrorMessage = "Couldn't generate PDF right now. Please try again."
         }
+        #endif
     }
-
-    #if os(macOS)
-    /// Mac has no share sheet for files, so ask where to save the PDF instead.
-    private func savePDFWithPanel(from temporaryURL: URL, suggestedName: String) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.pdf]
-        panel.nameFieldStringValue = suggestedName
-        panel.canCreateDirectories = true
-
-        let response = panel.runModal()
-        defer { try? FileManager.default.removeItem(at: temporaryURL) }
-        guard response == .OK, let destination = panel.url else { return }
-
-        do {
-            if FileManager.default.fileExists(atPath: destination.path) {
-                try FileManager.default.removeItem(at: destination)
-            }
-            try FileManager.default.copyItem(at: temporaryURL, to: destination)
-        } catch {
-            setupErrorMessage = "Couldn't save the PDF. Please try again."
-        }
-    }
-    #endif
 
     private func cleanupExportedDocument() {
         if let url = exportedDocumentCleanupURL {
             try? FileManager.default.removeItem(at: url)
             exportedDocumentCleanupURL = nil
         }
-    }
-
-    private func generatePuzzleForSession(_ session: ActivePuzzleSession) -> WordSearchPuzzle? {
-        generateRandomPuzzle(
-            from: session.wordPool,
-            wordCount: session.wordCount,
-            size: session.gridSize,
-            options: session.options
-        )
-    }
-
-    private func generateRandomPuzzle(
-        from wordPool: [String],
-        wordCount: Int,
-        size: Int,
-        options: WordSearchGenerationOptions
-    ) -> WordSearchPuzzle? {
-        guard wordPool.count >= wordCount else { return nil }
-
-        for _ in 0..<80 {
-            let selectedWords = Array(wordPool.shuffled().prefix(wordCount))
-
-            guard let result = WordSearchGenerator.generate(
-                words: selectedWords,
-                size: size,
-                options: options
-            ) else {
-                continue
-            }
-
-            if result.unplacedWords.isEmpty {
-                return result.puzzle
-            }
-        }
-
-        return nil
     }
 
     private func eligibleWords(in subject: WordSubject, for size: Int) -> [String] {
@@ -342,22 +350,21 @@ struct ContentView: View {
 }
 
 private extension View {
-    /// Full-screen on iOS; a sheet sized for the board on macOS, which has no full-screen cover.
+    /// Full-screen on iOS. On macOS puzzles open in their own window instead.
     @ViewBuilder
     func puzzleCover<Item: Identifiable, Content: View>(
         item: Binding<Item?>,
         @ViewBuilder content: @escaping (Item) -> Content
     ) -> some View {
-        #if os(macOS)
-        self.sheet(item: item) { value in
-            content(value).frame(minWidth: 960, minHeight: 720)
-        }
-        #else
+        #if os(iOS)
         self.fullScreenCover(item: item, content: content)
+        #else
+        self
         #endif
     }
 }
 
+#if os(iOS)
 private struct AppSidebar: View {
     @Binding var selectedTab: Int
 
@@ -366,7 +373,7 @@ private struct AppSidebar: View {
             HStack(spacing: 10) {
                 Image(systemName: "character.textbox")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.ground)
                     .frame(width: 36, height: 36)
                     .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.ink))
                 Text("Word Search")
@@ -417,15 +424,7 @@ private struct AppSidebar: View {
     }
 }
 
-private struct ActivePuzzleSession: Identifiable {
-    let id = UUID()
-    let puzzle: WordSearchPuzzle
-    let wordPool: [String]
-    let wordCount: Int
-    let gridSize: Int
-    let options: WordSearchGenerationOptions
-    let title: String
-}
+#endif
 
 private struct ExportedDocument: Identifiable {
     let id = UUID()
