@@ -32,7 +32,7 @@ Run the tests with `test` in place of `build`.
 ```
 assets/                          Source artwork (e.g. app icon master)
 WordSearchApp.xcodeproj
-WordSearchApp/                   App sources
+Sources/                         App sources
   App/                           App entry point and theme
   Models/                        SwiftData models and word bank validation
   Engine/                        Puzzle generation and selection logic

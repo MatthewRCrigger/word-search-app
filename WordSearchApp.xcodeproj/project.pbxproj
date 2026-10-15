@@ -30,9 +30,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		4D0A09672F7989C50021B5E8 /* WordSearchApp */ = {
+		4D0A09672F7989C50021B5E8 /* Sources */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WordSearchApp;
+			path = Sources;
 			sourceTree = "<group>";
 		};
 		4D0A09772F7989C60021B5E8 /* WordSearchAppTests */ = {
@@ -75,7 +75,7 @@
 		4D0A095C2F7989C40021B5E8 = {
 			isa = PBXGroup;
 			children = (
-				4D0A09672F7989C50021B5E8 /* WordSearchApp */,
+				4D0A09672F7989C50021B5E8 /* Sources */,
 				4D0A09772F7989C60021B5E8 /* WordSearchAppTests */,
 				4D0A09812F7989C60021B5E8 /* WordSearchAppUITests */,
 				4D0A09662F7989C50021B5E8 /* Products */,
@@ -108,7 +108,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				4D0A09672F7989C50021B5E8 /* WordSearchApp */,
+				4D0A09672F7989C50021B5E8 /* Sources */,
 			);
 			name = WordSearchApp;
 			packageProductDependencies = (
