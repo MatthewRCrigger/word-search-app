@@ -19,9 +19,28 @@ struct WordSearchAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .preferredColorScheme(.light)
         }
         .modelContainer(sharedModelContainer)
+    }
+}
+
+private struct RootView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isShowingSplash = true
+
+    var body: some View {
+        ZStack {
+            ContentView()
+
+            #if os(iOS)
+            if isShowingSplash && !reduceMotion {
+                SplashView { isShowingSplash = false }
+                    .transition(.identity)
+                    .zIndex(1)
+            }
+            #endif
+        }
     }
 }
