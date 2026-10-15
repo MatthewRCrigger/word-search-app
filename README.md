@@ -17,12 +17,12 @@ A native SwiftUI app for iPad, iPhone and macOS that builds word search puzzles 
 
 ## Building
 
-Open `WordSearchApp/WordSearchApp.xcodeproj` in Xcode, choose the `WordSearchApp` scheme and a destination (iPad, iPhone or My Mac), then Run.
+Open `WordSearchApp.xcodeproj` in Xcode, choose the `WordSearchApp` scheme and a destination (iPad, iPhone or My Mac), then Run.
 
 From the command line:
 
 ```bash
-xcodebuild -project WordSearchApp/WordSearchApp.xcodeproj -scheme WordSearchApp -destination 'platform=macOS' build
+xcodebuild -project WordSearchApp.xcodeproj -scheme WordSearchApp -destination 'platform=macOS' build
 ```
 
 Run the tests with `test` in place of `build`.
@@ -31,18 +31,17 @@ Run the tests with `test` in place of `build`.
 
 ```
 assets/                          Source artwork (e.g. app icon master)
-WordSearchApp/
-  WordSearchApp.xcodeproj
-  WordSearchApp/
-    App/                         App entry point and theme
-    Models/                      SwiftData models and word bank validation
-    Engine/                      Puzzle generation and selection logic
-    Export/                      PDF rendering and share sheet
-    Views/                       Screens
-      Components/                Reusable management UI
-    Assets.xcassets/
-  WordSearchAppTests/            Unit tests (Swift Testing)
-  WordSearchAppUITests/          UI tests
+WordSearchApp.xcodeproj
+WordSearchApp/                   App sources
+  App/                           App entry point and theme
+  Models/                        SwiftData models and word bank validation
+  Engine/                        Puzzle generation and selection logic
+  Export/                        PDF rendering and share sheet
+  Views/                         Screens
+    Components/                  Reusable management UI
+  Assets.xcassets/
+WordSearchAppTests/              Unit tests (Swift Testing)
+WordSearchAppUITests/            UI tests
 ```
 
 The Xcode project uses synchronized folders, so files added to these directories are picked up automatically.
